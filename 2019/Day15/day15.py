@@ -1,123 +1,15 @@
 import os
 import sys
 import pygame
-from collections import defaultdict
 # Add the parent directory to the path
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
-from Intcode.Intcode import Intcode
+
+from intcode.intCode_compiler import Intcode
 
 
-class World:
-    def __init__(self, start):
-        self.start = start
-        self.destination = None
-        self.__visited = []
-        self.__filled = []
-        self.graph = defaultdict(list)
-        self.explored = False
-        self.time = 0
-
-
-    def appendTile(self, current, next):
-        if next not in self.graph[current]:
-            self.graph[current].append(next)
-        if current not in self.graph[next]:
-            self.graph[next].append(current)
-
-
-    def pathToDestination(self, current):
-        self.__visited.append(current)
-
-        for tile in self.graph[current]:
-            if tile == self.destination:
-                print("Part 1:", len(self.__visited))
-                break
-            elif tile not in self.__visited:
-                self.pathToDestination(tile)
-
-        self.__visited.pop()
-    
-
-    def fillWithOxygen(self, positions):
-        nextToFill = []
-
-        for p in positions:
-            self.__filled.append(p)
-            for n in self.graph[p]:
-                if n not in self.__filled:
-                    nextToFill.append(n)
-
-        if len(self.__filled) != len(self.graph.keys()):
-            self.time += 1
-            self.fillWithOxygen(nextToFill)
-
-
-
-class Droid(Intcode):
-    def __init__(self, file, start):
-        Intcode.__init__(self, file)
-        self.__direction = 1
-        self.__position = start
-    
-    
-    def move(self):
-        self.run(self.__direction)
-        directions = {
-            1: (0, 1),
-            2:  (0, - 1),
-            3: (-1, 0),
-            4: (1, 0)
-        }
-        incX, incY = directions[self.__direction]
-        x, y = self.__position
-        x += incX
-        y += incY
-        self.__position = (x, y)
-    
-
-    def turn(self, instruction):
-        directions = [1, 4, 2, 3]
-        i = directions.index(self.__direction)
-        i = 0 if i + instruction == 0 else (i + instruction) % len(directions)
-        self.__direction = directions[i]
-    
-
-    def explore(self, world):
-        while not world.explored:
-            current = self.__position
-            self.move()
-            status = self.getOutput()[0]
-
-            if self.__position == world.start:
-                world.explored = True
-
-            if status == 0:
-                # Turn right
-                self.__position = current
-                self.turn(1)
-            else:
-                # Turn left
-                if status == 2:
-                    world.destination = self.__position
-                world.appendTile(current, self.__position) 
-                self.turn(-1)
-
-
-if __name__ == "__main__":
-    startingPosition = (25, 25)
-    droid = Droid("input.txt", startingPosition)
-    world = World(startingPosition)
-    droid.explore(world)
-    world.pathToDestination(startingPosition)
-    world.fillWithOxygen([world.destination])
-
-    print(world.time)
-    
-
-    
-
-
-
+DIRECTIONS = [1, 4, 2, 3]
+Y = [1, 0, -1, 0]
+X = [0, 1, 0, -1]
 
 path = []
 validPaths = []
@@ -152,13 +44,7 @@ def fillOxygen(oxygens, world):
     oxygens.extend(nextIteration)
                     
 
-
-
-
-
-
-
-if __name__ == "poop":
+if __name__ == "__main__":
     robot = Intcode("input.txt")
     current = (25,25)
     start = (25,25)

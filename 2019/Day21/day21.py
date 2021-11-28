@@ -26,7 +26,7 @@ class Springdroid:
                 computer.run(i)
 
         while not computer.waiting and not computer.stopped:
-                out.append(computer.run())
+                out.append(computer.run()) 
         out.pop()
         ans = out.pop()     
         print("".join([chr(o) for o in out]))
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     intcode = Intcode("input.txt")
     spring = Springdroid(intcode)
 
-    with open(os.path.join(sys.path[0], "script2.txt"), "r") as s:
+    with open(os.path.join(sys.path[0], "script.txt"), "r") as s:
         instructions = []
         for line in s.readlines():
             instructions.append(line)

@@ -8,7 +8,6 @@ THIRD_PARAM = 2
 class Intcode:
     def __init__(self, file):
         self.__memory = self.parse(file)[:]
-        self.__cachedMemory = self.parse(file)[:]
         self.__output = []
         self.__pointer = 0
         self.__relativeBase = 0
@@ -62,25 +61,11 @@ class Intcode:
         return self.__stopped
 
 
-    def getOutput(self, ascii=False):
-        if ascii:
-            res = [chr(n) for n in self.__output]
-        else:
-            res = self.__output
+    def getOutput(self):
+        res = self.__output
         self.__output = []
         return res
-    
 
-    def changeMemory(self, newValue, address):
-        self.__memory[address] = newValue
-
-    def reset(self):
-        self.__memory = self.__cachedMemory[:]
-        self.__output = []
-        self.__pointer = 0
-        self.__relativeBase = 0
-        self.__waiting = False
-        self.__stopped = False
 
     def run(self, input=None):
         p = self.__pointer

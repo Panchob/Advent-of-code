@@ -3,108 +3,143 @@ import os
 # Add the parent directory to the path
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
 
-from Intcode.Intcode import Intcode
+from intcode.intCode_compiler import Intcode
 
-
-class Packet:
-    def __init__(self, values, destination):
-        self.values = values
-        self.destination = destination
-        self.time = 0
-
+# In a list since other option is [x, y]
+DEFAULT_INPUT = [-1]
 
 class Computer(Intcode):
     def __init__(self, file):
-        Intcode.__init__(self, file)
-        self.__receivedPackets = []
+         super().__init__(file)
+         self.__packets = []
+
+
+    def __repr__(self):
+        return 'Computer[packets: %i, idle: %s]' % (self.numberOfPacket(), self.waiting)
+
+    def receivePacket(self, packet):
+        self.__packets.append(packet)
+
+    def numberOfPacket(self):
+        return len(self.__packets)
     
 
-    def isIdle(self):
-        if not self.__receivedPackets:
-            return True
-        else:
-            False
-    
-    
-    def boot(self, address):
-        self.run(address)
-
-
-    def storePacket(self, packet):
-        self.__receivedPackets.append(packet)
-
-    
-    def receivePacket(self):
-        if not self.__receivedPackets:
-            self.run(-1)
-        else:
-            packet = self.__receivedPackets.pop(0)
-            x, y = packet.values
-            self.run(x)
-            self.run(y)
+    def getFirstPacket(self, time):
+        if self.__packets and self.__packets[0].isUsable(time):
+            return self.__packets.pop(0)
     
 
-    def sendPackets(self):
-        out = self.getOutput()
-        i = 0
-        packets = []
+    def createPacket(self, input, time):
+        packet = None
 
-        while i < len(out):
-            packets.append(Packet((out[i+1], out[i+2]), out[i]))
-            i += 3
+        for i in input:
+            address = self.run(i)
+        
+        if address:
+            x = self.run()
+            y = self.run()
+            packet = Packet(address, x, y, time)
+        
+        return packet
+        
 
-        return packets
-            
+class Packet:
+    def __init__(self, address, x, y, time):
+        self.__address = address
+        self.__x = x
+        self.__y = y
+        self.__time = time
+
+
+    def __repr__(self):
+        return 'Packet(Address: %i, x: %i, y: %i)' % (self.__address, self.__x, self.__y)
+
+
+    def isUsable(self, time):
+        return self.__time <= time
+
+
+    def getXY(self):
+        return [self.__x, self.__y]
+
+
+    def addDelay(self, delay):
+        self.__time += delay
+
+
+    def getAddress(self):
+        return self.__address
+    
+    def setAddress(self, address):
+        self.__address = address
+
 
 class Network:
-    def __init__(self, size):
-        self.__computers = [Computer("input.txt") for _ in range(size)]
-        self.__size = size
-        self.__nat = None
-        self.__yValues = []
+    def  __init__(self, size):
+       self.__computers = [Computer("input.txt") for _ in range(50)]
+       self.__time = 0
+       self.__nat = None
 
 
-    def isIdle(self):
-        res = True
-        for c in self.__computers:
-            if not c.isIdle():
-                res = False
-                break
-        return res
-
-  
-    def bootAllComputers(self):
-        for address in range(self.__size):
-            self.__computers[address].boot(address)
+    def bootAll(self):
+        for address in range(len(self.__computers)):
+            self.__computers[address].run(address)
 
 
     def communicate(self):
-        found = False
-        while not found:
-            for computer in self.__computers:
-                computer.receivePacket()
-                packets = computer.sendPackets()
+        for computer in self.__computers:
+            currentPacket = computer.getFirstPacket(self.__time)
+        
+            if currentPacket:
+                packetToSend = computer.createPacket(currentPacket.getXY(), self.__time)
+            else:
+                packetToSend = computer.createPacket(DEFAULT_INPUT, self.__time)
 
-                for p in packets:
-                    if p.destination == 255:
-                        if self.__nat == None:
-                            print("Part 1:", p.values[1])
-                        self.__nat = p
-                        nat = self.__nat
-                        if self.isIdle():
-                            self.__computers[0].storePacket(nat)
-                            if nat.values[1] not in self.__yValues:
-                                self.__yValues.append(nat.values[1])
-                            else:
-                                print("Part 2:", nat.values[1])
-                                found = True
+            self.send(packetToSend)
 
-                        break
-                    self.__computers[p.destination].storePacket(p)
+
+    def addTime(self):
+        self.__time += 1
+    
+
+    def send(self, packet):
+        if packet:
+            address = packet.getAddress()
+
+            if address == 255:
+                if not self.__nat:
+                    print("FOUND IT:", packet)
+                packet.setAddress(0)
+                self.__nat = packet
+            else:
+                self.__computers[address].receivePacket(packet)
+            
+
+    def resume(self):
+        self.send(self.__nat)
+        return self.__nat.getXY()
+
+
+    def isIdle(self):
+        for computer in self.__computers:
+            if not computer.waiting or computer.numberOfPacket() > 0:
+                return False
+        return True
+
 
 
 if __name__ == "__main__":
-    nic = Network(50)
-    nic.bootAllComputers()
-    nic.communicate()
-    
+    network = Network(50)
+    network.bootAll()
+
+    while True:
+        network.communicate()
+        network.addTime()
+        lastY = 0
+
+        if network.isIdle():
+            currentY = network.resume()[1]
+            if currentY == lastY:
+                print("PART TWO", lastY)
+                break
+            lastY = currentY
