@@ -32,6 +32,6 @@ void main() {
   });
 
   test('Find sync', () {
-    expect(finAllHighlight(example2), 195);
+    expect(findAllHighlight(example2), 195);
   });
 }
