@@ -11,7 +11,6 @@ if __name__ == '__main__':
   part2 = 0
   with open(os.path.join(sys.path[0], "input.txt"), "r") as f:
     lines = f.readlines()
-    total = 0
     for line in lines:
       zone1, zone2 = line.split(',')
       s1, e1 = map(int, zone1.split('-'))
@@ -26,11 +25,3 @@ if __name__ == '__main__':
       
   print('Part 1: ', part1)
   print('Part 2: ', part2)
-
-
-
-
-
-  
-      
-
